@@ -1,0 +1,110 @@
+#![allow(non_snake_case)]
+use chrono::{Datelike, NaiveDate};
+use serde::{Deserialize, Serialize};
+use std::vec::Vec;
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Response {
+    requestDate: String,
+    startDate: String,
+    endDate: String,
+    data: Vec<Data>,
+}
+#[derive(Deserialize, Serialize, Debug)]
+struct Data {
+    count_date: String,
+    count: usize,
+}
+#[derive(Deserialize, Serialize, Debug)]
+struct ParsedData {
+    month: u32,
+    weekday: String,
+    date: String,
+    count: usize,
+}
+
+impl ParsedData {
+    fn from_data(data: Data) -> Self {
+        let date = NaiveDate::parse_from_str(&data.count_date, "%Y/%m/%d").unwrap();
+        ParsedData {
+            month: date.month(),
+            weekday: date.weekday().to_string(),
+            date: date.to_string(),
+            count: data.count,
+        }
+    }
+}
+
+fn calc_end_month(year: usize, month: u8) -> u8 {
+    if month == 2 {
+        return 28 + (year % 4 == 0) as u8;
+    }
+    31 - (month == 4 || month == 6 || month == 9 || month == 11) as u8
+}
+pub async fn fetch_from_month_and_year(
+    device_name: &str,
+    month: u8,
+    year: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // if month > 12 || month == 0 {
+    //     return Err(Box::new("Month must be between 1 and 12."));
+    // }
+    let path = format!("./data/{}/{:02}_{}.csv", device_name, month, year);
+    // if std::path::Path::new(&path).exists() && !update {
+    //     return Ok(serde_json::from_str(
+    //         &std::fs::read_to_string(path).unwrap(),
+    //     )?);
+    // }
+    let start = format!("{}{:02}01", year, month);
+    let end = format!("{}{:02}{:02}", year, month, calc_end_month(year, month));
+    fetch_history(device_name, &path, &start, &end).await
+}
+pub async fn fetch_from_year(
+    device_name: &str,
+    year: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // if month > 12 || month == 0 {
+    //     return Err(Box::new("Month must be between 1 and 12."));
+    // }
+    let path = format!("./data/{}/{}.csv", device_name, year);
+    // if std::path::Path::new(&path).exists() && !update {
+    //     return Ok(serde_json::from_str(
+    //         &std::fs::read_to_string(path).unwrap(),
+    //     )?);
+    // }
+    let start = format!("{}0101", year);
+    let end = format!("{}1231", year);
+    fetch_history(device_name, &path, &start, &end).await
+}
+
+async fn fetch_history(
+    device_name: &str,
+    path: &str,
+    start: &str,
+    end: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let url = format!(
+        "https://data.mobility.brussels/bike/api/counts/?request=history&featureID={}&startDate={}&endDate={}",
+        device_name, start, end);
+    let response = reqwest::get(url).await?;
+    println!("Received data from wep api");
+    let data = serde_json::from_str::<self::Response>(&response.text().await?)
+        .unwrap()
+        .data;
+    println!("Parsed Data");
+    let dir = format!("./data/{}/", device_name);
+    if !std::path::Path::new(&dir).exists() {
+        std::fs::create_dir_all(dir)?;
+    }
+    print!("Writing data");
+    let mut writer = csv::WriterBuilder::new()
+        .quote_style(csv::QuoteStyle::NonNumeric)
+        .from_path(&path)?;
+    // let mut writer = csv::Writer::from_path(&path)?;
+    for data in data {
+        writer.serialize(ParsedData::from_data(data))?;
+    }
+    println!(": Finished writing data");
+    writer.flush()?;
+    Ok(())
+}

@@ -1,0 +1,15 @@
+[package]
+name = "bxl_bikes"
+version = "0.1.0"
+authors = ["Wannes Malfait <wannes.malfait@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = "0.11.2"
+chrono = "0.4.19"
+csv = "1.1.6"
+serde_json = "1.0.64"
+serde = {version="1.0.124", features = ["derive"]}
+tokio = { version = "1.4.0", features = ["full"] }
