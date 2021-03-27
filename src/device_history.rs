@@ -13,14 +13,16 @@ struct Response {
 #[derive(Deserialize, Serialize, Debug)]
 struct Data {
     count_date: String,
+    time_gap: u8,
     count: usize,
 }
 #[derive(Deserialize, Serialize, Debug)]
-struct ParsedData {
-    month: u32,
-    weekday: String,
-    date: String,
-    count: usize,
+pub struct ParsedData {
+    pub month: u32,
+    pub weekday: String,
+    pub date: String,
+    pub hour: u8,
+    pub count: usize,
 }
 
 impl ParsedData {
@@ -31,6 +33,8 @@ impl ParsedData {
             weekday: date.weekday().to_string(),
             date: date.to_string(),
             count: data.count,
+            // Time gap is incremented every 15 mins, so 4 per hour
+            hour: (data.time_gap - 1) / 4,
         }
     }
 }

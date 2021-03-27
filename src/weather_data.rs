@@ -1,5 +1,4 @@
 #![allow(non_snake_case)]
-use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
 
@@ -27,6 +26,12 @@ struct Data {
     precipitation: u8,
     wind_speed: u8,
 }
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AsosData {
+    pub valid: String,
+    pub tmpc: f64,
+    pub sknt: f64,
+}
 
 fn calc_end_month(year: usize, month: u8) -> u8 {
     if month == 2 {
@@ -41,7 +46,7 @@ pub async fn fetch_from_month_and_year(
     // if month > 12 || month == 0 {
     //     return Err(Box::new("Month must be between 1 and 12."));
     // }
-    let path = format!("./data/Weather/hourly_{:02}_{}.csv", month, year);
+    let path = format!("./data/weather/hourly_{:02}_{}.csv", month, year);
     // if std::path::Path::new(&path).exists() && !update {
     //     return Ok(serde_json::from_str(
     //         &std::fs::read_to_string(path).unwrap(),
@@ -55,7 +60,7 @@ pub async fn fetch_from_year(year: usize) -> Result<(), Box<dyn std::error::Erro
     // if month > 12 || month == 0 {
     //     return Err(Box::new("Month must be between 1 and 12."));
     // }
-    let path = format!("./data/Weather/hourly_{}.csv", year);
+    let path = format!("./data/weather/hourly_{}.csv", year);
     // if std::path::Path::new(&path).exists() && !update {
     //     return Ok(serde_json::from_str(
     //         &std::fs::read_to_string(path).unwrap(),
@@ -80,7 +85,7 @@ async fn fetch_history(
     println!("Received data from wep api");
     let data = serde_json::from_str::<self::Response>(&response.text().await?).unwrap();
     println!("Parsed {} data points", data.totalFeatures);
-    let dir = "./data/Weather/";
+    let dir = "./data/weather/";
     if !std::path::Path::new(&dir).exists() {
         std::fs::create_dir_all(dir)?;
     }
