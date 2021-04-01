@@ -165,10 +165,10 @@ fn make_training_data(device_name: &str) -> std::io::Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // print_live_data().await
-    // device_history::fetch_from_year("CB02411", 2020).await?;
-    // weather_data::fetch_from_year(2021).await?;
-    make_training_data("CB02411")?;
+    // print_live_data().await?;
+    device_history::fetch_from_year("CB02411", 2019).await?;
+    weather_data::fetch_from_year(2019).await?;
+    // make_training_data("CB02411")?;
 
     Ok(())
 }
