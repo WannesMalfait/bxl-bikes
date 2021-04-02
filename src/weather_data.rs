@@ -43,6 +43,11 @@ async fn fetch_history(
     start: &NaiveDate,
     end: &NaiveDate,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    println!(
+        "Getting weather history in period {} to {}",
+        start.to_string(),
+        end.to_string()
+    );
     let base =
         "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=EBBR&data=tmpc&data=sknt&";
     let tail = "&tz=Etc%2FUTC&format=onlycomma&latlon=no&elev=no&missing=M&trace=T&direct=no&report_type=1&report_type=2";

@@ -87,6 +87,7 @@ async fn fetch_history(
     start: &str,
     end: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Fetching device history from {}", device_name);
     let url = format!(
         "https://data.mobility.brussels/bike/api/counts/?request=history&featureID={}&startDate={}&endDate={}",
         device_name, start, end);
