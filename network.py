@@ -9,9 +9,12 @@ import numpy as np
 
 
 class BikeCountingDataset(Dataset):
-    def __init__(self, data_path, max_rows=None):
+    def __init__(self, data_paths, max_rows=None):
         self.data = np.genfromtxt(
-            data_path, delimiter=',', skip_header=1, dtype=float, max_rows=max_rows)
+            data_paths[0], delimiter=',', skip_header=1, dtype=float, max_rows=max_rows)
+        for i in range(1, len(data_paths)):
+            self.data += np.genfromtxt(
+                data_paths[0], delimiter=',', skip_header=1, dtype=float, max_rows=max_rows)
         # self.data = torch.randn(5000, 2)
 
     def __len__(self):
@@ -27,9 +30,11 @@ class BikeCountingDataset(Dataset):
 
 # %% Load the data
 print('loading data')
-training_data = BikeCountingDataset('./data/training_data/CB02411_2020.csv')
+training_data_files = [
+    f'./data/training_data/CB02411_{year}.csv' for year in (2019, 2020, 2021)]
+training_data = BikeCountingDataset(training_data_files)
 test_data = BikeCountingDataset(
-    './data/training_data/CB02411_2021.csv')
+    ['./data/training_data/CB02411_2021.csv'])
 print('done loading data')
 
 
@@ -114,7 +119,7 @@ def test(dataloader, model):
 # %% Train and test the model!
 
 
-epochs = 5
+epochs = 20
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train(train_dataloader, model, loss_fn, optimizer)
@@ -129,11 +134,11 @@ model.eval()
 days = ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-x = torch.tensor([8, 13.5, 11.5, 6, 3, 31882], dtype=torch.float32)
+x = torch.tensor([11, 17.5, 10.0, 6, 3, 31882], dtype=torch.float32)
 X = torch.broadcast_to(x, (batch_size, 6)).to(device)
 with torch.no_grad():
     pred = model(X)
     print(f'hour {x[0]}; temperature: {x[1]} °C; windspeed: {x[2]} knots; weekday: {days[int(x[3])]}; month: {months[int(x[4])]}; yearcount: {x[5]}')
     print('prediction:', pred[0].item())
 
-# %%
+# %% Done!
