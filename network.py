@@ -1,9 +1,11 @@
-from torch._C import dtype
+# %% Import what we need
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 import matplotlib.pyplot as plt
 import numpy as np
+
+# %% Create a class for loading data
 
 
 class BikeCountingDataset(Dataset):
@@ -23,10 +25,11 @@ class BikeCountingDataset(Dataset):
         return sample
 
 
+# %% Load the data
 print('loading data')
 training_data = BikeCountingDataset('./data/training_data/CB02411_2020.csv')
 test_data = BikeCountingDataset(
-    './data/training_data/CB02411_2020.csv', max_rows=1024)
+    './data/training_data/CB02411_2021.csv')
 print('done loading data')
 
 
@@ -41,7 +44,7 @@ test_dataloader = DataLoader(test_data, shuffle=True, batch_size=batch_size)
 device = "cuda"  # if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
-# Define model
+# %% Define model
 
 
 class NeuralNetwork(nn.Module):
@@ -66,14 +69,8 @@ model = NeuralNetwork().to(device)
 # model.load_state_dict(torch.load("model.pth"))
 print(model)
 
-
-# def loss_fn(pred: torch.Tensor, y: torch.Tensor):
-#     temp = pred.sub(y).div(200.).square()
-#     return torch.sub(1, temp).clamp(0, 1).sum().div(float(batch_size))
-
-
+# %% Define loss, training and test functions
 loss_fn = nn.L1Loss()
-
 
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-2)
 
@@ -114,32 +111,29 @@ def test(dataloader, model):
     print(
         f"Test Error: \n Accuracy: {(100*score):>0.2f}%, Avg loss: {test_loss:>8f} \n")
 
+# %% Train and test the model!
+
 
 epochs = 5
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train(train_dataloader, model, loss_fn, optimizer)
     test(test_dataloader, model)
+
+# %% Save the model
 torch.save(model.state_dict(), "model.pth")
 print("Saved PyTorch Model State to model.pth")
 
+# %% Test with new custom input
 model.eval()
-x = torch.tensor([13, 30, 2, 6, 3, 114000], dtype=torch.float32)
-x = torch.broadcast_to(x, (batch_size, 6)).to(device)
-# print(x)
+days = ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]
+months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+x = torch.tensor([8, 13.5, 11.5, 6, 3, 31882], dtype=torch.float32)
+X = torch.broadcast_to(x, (batch_size, 6)).to(device)
 with torch.no_grad():
-    pred = model(x)
+    pred = model(X)
+    print(f'hour {x[0]}; temperature: {x[1]} °C; windspeed: {x[2]} knots; weekday: {days[int(x[3])]}; month: {months[int(x[4])]}; yearcount: {x[5]}')
     print('prediction:', pred[0].item())
-# for X, y in test_dataloader:
-#     X, y = X.to(device), y.to(device)
 
-#     print('Input:', X[0])
-
-#     pred: torch.Tensor = model.forward(X[0])
-#     print('Prediction:', pred, 'expected', y)
-#     break
-# model.eval()
-# with torch.no_grad():
-#     pred = model(x)
-#     predicted, actual = classes[pred[0].argmax(0)], classes[y]
-#     print(f'Predicted: "{predicted}", Actual: "{actual}"')
+# %%
