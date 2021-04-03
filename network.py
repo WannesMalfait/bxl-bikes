@@ -71,8 +71,9 @@ class NeuralNetwork(nn.Module):
 
 
 model = NeuralNetwork().to(device)
-# model.load_state_dict(torch.load("model.pth"))
 print(model)
+# %% Load previous model
+# model.load_state_dict(torch.load("model.pth"))
 
 # %% Define loss, training and test functions
 loss_fn = nn.L1Loss()
@@ -119,7 +120,7 @@ def test(dataloader, model):
 # %% Train and test the model!
 
 
-epochs = 20
+epochs = 100
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train(train_dataloader, model, loss_fn, optimizer)
@@ -129,12 +130,13 @@ for t in range(epochs):
 torch.save(model.state_dict(), "model.pth")
 print("Saved PyTorch Model State to model.pth")
 
+
 # %% Test with new custom input
 model.eval()
 days = ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-x = torch.tensor([11, 17.5, 10.0, 6, 3, 31882], dtype=torch.float32)
+x = torch.tensor([13, 19.0, 11.5, 6, 3, 105634], dtype=torch.float32)
 X = torch.broadcast_to(x, (batch_size, 6)).to(device)
 with torch.no_grad():
     pred = model(X)

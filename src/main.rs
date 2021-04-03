@@ -96,7 +96,7 @@ fn make_training_data(device_name: &str, year: i32) -> std::io::Result<()> {
                 prev_d_data = d_data;
                 break;
             }
-            num_this_hour += 1;
+            num_this_hour += d_data.count;
         }
         let mut temperature = 0.;
         let mut windspeed = 0.;
