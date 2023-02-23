@@ -8,9 +8,9 @@ mod device_history;
 mod devices;
 mod weather_data;
 
-async fn print_live_data() -> Result<(), Box<dyn std::error::Error>> {
+async fn print_live_data(overwrite: bool) -> Result<(), Box<dyn std::error::Error>> {
     // Get all the available devices.
-    let devices = devices::get_devices(false, false).await?;
+    let devices = devices::get_devices(overwrite, overwrite).await?;
     let client = reqwest::Client::new();
     for device in &devices.features {
         if !device.properties.active {
@@ -20,8 +20,12 @@ async fn print_live_data() -> Result<(), Box<dyn std::error::Error>> {
             .await?
             .data;
         println!(
-            "{}:\nHour count: {}\nDay count:  {}\nYear count: {}",
-            &device.properties.road_nl, data.hour_cnt, data.day_cnt, data.year_cnt
+            "{} (id = {}):\nHour count: {}\nDay count:  {}\nYear count: {}",
+            &device.properties.road_nl,
+            device.properties.device_name,
+            data.hour_cnt,
+            data.day_cnt,
+            data.year_cnt
         );
     }
     Ok(())
@@ -177,7 +181,11 @@ struct Cli {
 #[derive(Debug, Subcommand, Clone)]
 enum Commands {
     /// Get the live data from all available counting poles
-    LiveData,
+    LiveData {
+        /// Fetch and overwrite the list of devices
+        #[arg(short, long)]
+        overwrite: bool,
+    },
     /// Fetch device history and write it to disk
     DeviceHistory {
         year: usize,
@@ -202,7 +210,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::LiveData => print_live_data().await?,
+        Commands::LiveData { overwrite } => print_live_data(overwrite).await?,
         Commands::DeviceHistory {
             year,
             month,
