@@ -18,7 +18,7 @@ pub async fn fetch_from_month_and_year(
     month: u32,
     year: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let path = format!("./data/weather/asos_{:02}_{}.csv", month, year);
+    let path = format!("./data/weather/asos_{month:02}_{year}.csv");
     let start = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
     let end = NaiveDate::from_ymd_opt(year, month, calc_end_month(year, month))
         .unwrap()
@@ -30,7 +30,7 @@ pub async fn fetch_from_year(year: i32) -> Result<(), Box<dyn std::error::Error>
     // if month > 12 || month == 0 {
     //     return Err(Box::new("Month must be between 1 and 12."));
     // }
-    let path = format!("./data/weather/asos_{}.csv", year);
+    let path = format!("./data/weather/asos_{year}.csv");
     // if std::path::Path::new(&path).exists() && !update {
     //     return Ok(serde_json::from_str(
     //         &std::fs::read_to_string(path).unwrap(),
@@ -47,9 +47,7 @@ async fn fetch_history(
     end: &NaiveDate,
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!(
-        "Getting weather history in period {} to {}",
-        start.to_string(),
-        end.to_string()
+        "Getting weather history in period {start} to {end}"
     );
     let base =
         "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=EBBR&data=tmpc&data=sknt&";
@@ -74,8 +72,8 @@ async fn fetch_history(
     if !std::path::Path::new(&dir).exists() {
         std::fs::create_dir_all(dir)?;
     }
-    std::fs::write(&path, response.text().await?)?;
-    println!("Finished writing data to {}", path);
+    std::fs::write(path, response.text().await?)?;
+    println!("Finished writing data to {path}");
     // let data = serde_json::from_str::<self::Response>(&response.text().await?).unwrap();
     // println!("Parsed {} data points", data.totalFeatures);
     // let mut writer = csv::WriterBuilder::new()

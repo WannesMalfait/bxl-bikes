@@ -44,7 +44,7 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
         "Creating training data for {} from year {}",
         device_name, &year
     );
-    let device_path = format!("./data/{}/{}.csv", device_name, year);
+    let device_path = format!("./data/{device_name}/{year}.csv");
     if !std::path::Path::new(&device_path).exists() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
@@ -59,7 +59,7 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
     if !std::path::Path::new(&weather_path).exists() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            format!("Could not find data for weather of {}", year),
+            format!("Could not find data for weather of {year}"),
         ));
     }
     let mut weather_reader = csv::Reader::from_path(&weather_path).unwrap();
@@ -89,7 +89,7 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
         let hour = prev_d_data.hour;
         let month = prev_d_data.month;
         let mut num_this_hour = prev_d_data.count;
-        while let Some(result) = device_iter.next() {
+        for result in device_iter.by_ref() {
             let d_data = result?;
             if d_data.hour != hour {
                 day_count += num_this_hour;
@@ -108,7 +108,7 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
             entries_this_hour += 1;
         } else {
             // Keep going till the correct hour.
-            while let Some(result) = weather_iter.next() {
+            for result in weather_iter.by_ref() {
                 let data = result?;
                 let date = NaiveDateTime::parse_from_str(&data.valid, "%Y-%m-%d %H:%M").unwrap();
                 if date.hour() as u8 == hour {
@@ -119,7 +119,7 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
                 }
             }
         }
-        while let Some(result) = weather_iter.next() {
+        for result in weather_iter.by_ref() {
             let data = result?;
             let date = NaiveDateTime::parse_from_str(&data.valid, "%Y-%m-%d %H:%M").unwrap();
             if date.hour() as u8 == hour {
@@ -127,8 +127,8 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
                 windspeed += data.sknt;
                 entries_this_hour += 1;
             } else {
-                temperature = temperature / (entries_this_hour as f64);
-                windspeed = windspeed / (entries_this_hour as f64);
+                temperature /= entries_this_hour as f64;
+                windspeed /= entries_this_hour as f64;
                 prev_w_data = data;
                 break;
             }
@@ -155,7 +155,7 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
     let path = format!("./data/training_data/{}_{}.csv", device_name, &year);
     let dir = "./data/training_data/";
     if !std::path::Path::new(&dir).exists() {
-        std::fs::create_dir_all(&dir)?;
+        std::fs::create_dir_all(dir)?;
     }
     let mut writer = csv::Writer::from_path(&path)?;
     print!("Writing data");
@@ -164,7 +164,7 @@ fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
     }
     println!(": Finished writing data");
     writer.flush()?;
-    return Ok(());
+    Ok(())
 }
 
 #[derive(Debug, Parser)]
