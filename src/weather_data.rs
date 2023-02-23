@@ -19,8 +19,11 @@ pub async fn fetch_from_month_and_year(
     year: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let path = format!("./data/weather/asos_{:02}_{}.csv", month, year);
-    let start = NaiveDate::from_ymd(year, month, 1);
-    let end = NaiveDate::from_ymd(year, month, calc_end_month(year, month)).succ();
+    let start = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
+    let end = NaiveDate::from_ymd_opt(year, month, calc_end_month(year, month))
+        .unwrap()
+        .succ_opt()
+        .unwrap();
     fetch_history(&path, &start, &end).await
 }
 pub async fn fetch_from_year(year: i32) -> Result<(), Box<dyn std::error::Error>> {
@@ -33,8 +36,8 @@ pub async fn fetch_from_year(year: i32) -> Result<(), Box<dyn std::error::Error>
     //         &std::fs::read_to_string(path).unwrap(),
     //     )?);
     // }
-    let start = NaiveDate::from_ymd(year, 1, 1);
-    let end = NaiveDate::from_ymd(year + 1, 1, 1);
+    let start = NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+    let end = NaiveDate::from_ymd_opt(year + 1, 1, 1).unwrap();
     fetch_history(&path, &start, &end).await
 }
 

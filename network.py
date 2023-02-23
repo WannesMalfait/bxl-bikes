@@ -12,9 +12,11 @@ class BikeCountingDataset(Dataset):
     def __init__(self, data_paths, max_rows=None):
         self.data = np.genfromtxt(
             data_paths[0], delimiter=',', skip_header=1, dtype=float, max_rows=max_rows)
+        print(len(self.data))
         for i in range(1, len(data_paths)):
-            self.data += np.genfromtxt(
-                data_paths[0], delimiter=',', skip_header=1, dtype=float, max_rows=max_rows)
+            self.data = np.concatenate((self.data, np.genfromtxt(
+                data_paths[0], delimiter=',', skip_header=1, dtype=float, max_rows=max_rows)), axis=0)
+            print(len(self.data))
         # self.data = torch.randn(5000, 2)
 
     def __len__(self):
@@ -78,7 +80,7 @@ print(model)
 # %% Define loss, training and test functions
 loss_fn = nn.L1Loss()
 
-optimizer = torch.optim.Adam(model.parameters(), lr=3e-2)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-1)
 
 
 def train(dataloader, model, loss_fn, optimizer):
@@ -120,7 +122,7 @@ def test(dataloader, model):
 # %% Train and test the model!
 
 
-epochs = 100
+epochs = 10
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train(train_dataloader, model, loss_fn, optimizer)
@@ -136,11 +138,11 @@ model.eval()
 days = ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-x = torch.tensor([13, 19.0, 11.5, 6, 3, 105634], dtype=torch.float32)
+x = torch.tensor([6, 2, 6, 6, 4, 132594], dtype=torch.float32)
 X = torch.broadcast_to(x, (batch_size, 6)).to(device)
 with torch.no_grad():
     pred = model(X)
-    print(f'hour {x[0]}; temperature: {x[1]} °C; windspeed: {x[2]} knots; weekday: {days[int(x[3])]}; month: {months[int(x[4])]}; yearcount: {x[5]}')
+    print(f'hour {x[0]}; temperature: {x[1]} °C; windspeed: {x[2]} knots; weekday: {days[int(x[3])]}; month: {months[int(x[4]) -1]}; yearcount: {x[5]}')
     print('prediction:', pred[0].item())
 
 # %% Done!

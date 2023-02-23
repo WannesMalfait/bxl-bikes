@@ -1,5 +1,5 @@
 use chrono::{NaiveDateTime, Timelike};
-use clap::{App, Arg};
+use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::vec::Vec;
@@ -39,7 +39,7 @@ struct TrainingData {
     day_count: usize,
 }
 
-fn make_training_data(device_name: &str, year: i32) -> std::io::Result<()> {
+fn make_training_data(device_name: &str, year: usize) -> std::io::Result<()> {
     println!(
         "Creating training data for {} from year {}",
         device_name, &year
@@ -167,88 +167,58 @@ fn make_training_data(device_name: &str, year: i32) -> std::io::Result<()> {
     return Ok(());
 }
 
+#[derive(Debug, Parser)]
+#[command(author, version, about="Get data about bike counting poles in Brussels", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Debug, Subcommand, Clone)]
+enum Commands {
+    /// Get the live data from all available counting poles
+    LiveData,
+    /// Fetch device history and write it to disk
+    DeviceHistory {
+        year: usize,
+        month: Option<u8>,
+        /// Specify the name of the device to look up
+        #[arg(default_value = "CBO2411", short, long)]
+        device_name: String,
+    },
+    /// Fetch weather history for Brussels and write it to disk
+    WeatherHistory { year: i32, month: Option<u32> },
+    /// Create training data from the weather and device history of the given year
+    TrainingData {
+        year: usize,
+        /// Specify the name of the device to look up
+        #[arg(default_value = "CBO2411", short, long)]
+        device_name: String,
+    },
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let matches = App::new("Brussels Bikes")
-        .version(clap::crate_version!())
-        .author(clap::crate_authors!())
-        .about("Get data about bike counting poles in Brussels")
-        .arg(
-            Arg::with_name("live data")
-                .short("l")
-                .long("live-data")
-                .help("Get the live data from all available counting poles")
-                .takes_value(false),
-        )
-        .arg(
-            Arg::with_name("fetch device history")
-                .short("d")
-                .long("device-history")
-                .long_help(
-                    "Fetch device history and write it to disk. A year should be specified, and optionally a month as well.",
-                )
-                .help("Fetch device history")
-                .takes_value(true)
-                .max_values(2),
-        )
-        .arg(
-            Arg::with_name("fetch weather history")
-                .short("w")
-                .long("weather-history")
-                .long_help(
-                    "Fetch weather history for Brussels and write it to disk. A year should be specified, and optionally a month as well.",
-                )
-                .help("Fetch weather history")
-                .takes_value(true)
-                .max_values(2),
-        )
-        .arg(
-            Arg::with_name("training data")
-                .short("t")
-                .long("training-data")
-                .long_help(
-                    "Create training data from the weather and device history of the given year",
-                )
-                .help("Create training data")
-                .value_name("year")
-                .takes_value(true),
-        )
-        .get_matches();
+    let args = Cli::parse();
 
-    // Gets a value for config if supplied by user, or defaults to "default.conf"
-    if matches.is_present("live data") {
-        print_live_data().await?;
-    }
-    // Could be an argument, but default it for now
-    let device_name = "CB02411";
-    if let Some(args) = matches.values_of("fetch device history") {
-        let mut inputs = args.map(|s| s.parse::<u32>().unwrap());
-        if let Some(year) = inputs.next() {
-            match inputs.next() {
-                Some(month) => {
-                    device_history::fetch_from_month_and_year(
-                        device_name,
-                        month as u8,
-                        year as usize,
-                    )
-                    .await?
-                }
-                None => device_history::fetch_from_year(device_name, year as usize).await?,
+    match args.command {
+        Commands::LiveData => print_live_data().await?,
+        Commands::DeviceHistory {
+            year,
+            month,
+            device_name,
+        } => {
+            if let Some(month) = month {
+                device_history::fetch_from_month_and_year(&device_name, month, year).await?
+            } else {
+                device_history::fetch_from_year(&device_name, year).await?
             }
         }
-    }
-    if let Some(args) = matches.values_of("fetch weather history") {
-        let mut inputs = args.map(|s| s.parse::<i32>().unwrap());
-        if let Some(year) = inputs.next() {
-            match inputs.next() {
-                Some(month) => weather_data::fetch_from_month_and_year(month as u32, year).await?,
-                None => weather_data::fetch_from_year(year).await?,
-            }
-        }
-    }
-    if let Some(arg) = matches.value_of("training data") {
-        let year = arg.parse::<i32>().unwrap();
-        make_training_data(device_name, year)?;
+        Commands::WeatherHistory { year, month } => match month {
+            Some(month) => weather_data::fetch_from_month_and_year(month, year).await?,
+            None => weather_data::fetch_from_year(year).await?,
+        },
+        Commands::TrainingData { year, device_name } => make_training_data(&device_name, year)?,
     }
 
     Ok(())
